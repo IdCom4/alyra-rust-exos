@@ -3,3 +3,11 @@ fn main() {
     let average = calculate_average(&temperatures);
     println!("Moyenne température : {}°C", average);
 }
+
+fn calculate_average(temperatures: &[f32]) -> f32 {
+    let mut sum = 0.0;
+    for temperature in temperatures {
+        sum += temperature;
+    }
+    sum / temperatures.len() as f32
+}
