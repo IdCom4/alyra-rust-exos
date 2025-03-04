@@ -13,9 +13,7 @@ pub fn get_add_contact_menu() -> Menu<'static> {
       Enter <name> <phone> to add a contact".to_string(),
       ]
     }),
-    HashMap::from([
-      ("<".to_string(), Box::new(|_, _, _| MenuOption::Back) as MenuOptionFn),
-    ]),
+    Box::new(||  HashMap::from([ ("<".to_string(), Box::new(|_, _, _| MenuOption::Back) as MenuOptionFn) ])),
     {
       Box::new(|input, _, contacts_use_cases| {
         let parts: Vec<&str> = input.split(' ').collect();

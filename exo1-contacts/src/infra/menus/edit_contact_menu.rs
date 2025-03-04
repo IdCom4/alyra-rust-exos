@@ -70,9 +70,9 @@ pub fn get_edit_contact_menu(refresh_contacts: Arc<RefreshContactsFn>, contact: 
 
   Menu::new(
     generate_lines,
-    HashMap::from([
-      ("<".to_string(), Box::new(|_, _, _| MenuOption::Back) as MenuOptionFn),
-    ]),
+    {
+      Box::new(|| { HashMap::from([("<".to_string(), Box::new(|_, _, _| MenuOption::Back) as MenuOptionFn)]) })
+     },
     closure
   )
 }

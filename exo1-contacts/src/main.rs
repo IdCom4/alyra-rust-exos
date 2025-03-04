@@ -24,8 +24,8 @@ fn main() {
 
   // init menus
   let refresh_contacts = Box::new(move || contacts_use_case_static.get_contacts());
-  let mut menu_stack: Vec<Arc<Menu>> = vec![Arc::new(get_main_menu(Arc::new(refresh_contacts)))];
-  let mut current_menu = menu_stack.last().unwrap().clone();
+  let mut menu_stack: Vec<Menu> = vec![get_main_menu(Arc::new(refresh_contacts))];
+  let mut current_menu = menu_stack.last().unwrap();
 
   loop {
 
@@ -41,13 +41,13 @@ fn main() {
 
     match option {
       MenuOption::GoTo(menu) => {
-        menu_stack.push(menu.clone());
-        current_menu = menu_stack.last().unwrap().clone();
+        menu_stack.push(menu);
+        current_menu = menu_stack.last().unwrap();
       },
       MenuOption::Back => {
         menu_stack.pop();
         if let Some(menu) = menu_stack.last() {
-          current_menu = menu.clone();
+          current_menu = menu;
         } else {
           break;
         }
