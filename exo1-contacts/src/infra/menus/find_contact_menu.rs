@@ -9,7 +9,7 @@ pub fn get_find_contact_menu(refresh_contacts: Arc<RefreshContactsFn>) -> Menu<'
     Box::new(||
       vec![
         "=== FIND CONTACT ===\n\
-        <. Back\n\
+        <. Back\n\n\
         Enter contact's name:".to_string(),
       ]
     ),

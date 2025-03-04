@@ -25,7 +25,7 @@ impl <T: TUniqueEntity, FS: Fn(&T) -> String, FD: Fn(&str) -> T> FileDAO<T, FS, 
     }
   }
 
-  pub fn read_file(&self) -> Result<String, Box<dyn Error>> {
+  fn read_file(&self) -> Result<String, Box<dyn Error>> {
     let path = Path::new(&self.file_path);
 
     match path.exists() {
@@ -34,11 +34,42 @@ impl <T: TUniqueEntity, FS: Fn(&T) -> String, FD: Fn(&str) -> T> FileDAO<T, FS, 
     }
   }
 
-  pub fn write_file(&self, content: &str) {
-    std::fs::write(Path::new(&self.file_path), content).map_err(|e| e.to_string()).unwrap();
+  #[allow(dead_code)]
+  pub fn write_file(&self, table_content: Vec<T>) {
+    let table_content = table_content.iter().map(|entity| (self.json_serializer)(entity)).collect::<Vec<String>>().join(",\n");
+    std::fs::write(Path::new(&self.file_path), format!("[\n{}\n]", table_content)).map_err(|e| e.to_string()).unwrap();
   }
 
-  pub fn get_next_available_id(&self, entries: Vec<&str>) -> Result<u64, Box<dyn Error>> {
+  pub fn write_file_str(&self, table_content: Vec<String>) {
+    let table_content = table_content.join(",\n");
+    std::fs::write(Path::new(&self.file_path), format!("[\n{}\n]", table_content)).map_err(|e| e.to_string()).unwrap();
+  }
+
+  pub fn get_str_entries(&self) -> Result<Vec<String>, Box<dyn Error>> {
+    let file_content = self.read_file()?;
+    let lines = file_content.lines().collect::<Vec<&str>>();
+
+    // remove first and last lines
+    match lines.len() > 2 {
+      true => return Ok(lines[1..lines.len() - 1].into_iter().enumerate().map(|(index, s)| {
+          if index >= lines.len() - 3 { s.to_string() } 
+          else {
+            // remove trailing comma
+              s[..s.len() - 1].to_string()
+          }
+        }).collect::<Vec<String>>()),
+      false => return Ok(lines.into_iter().map(|s| s.to_string()).collect::<Vec<String>>()),
+    }
+  }
+
+  #[allow(dead_code)]
+  pub fn get_entries(&self) -> Result<Vec<T>, Box<dyn Error>> {
+    let entries = self.get_str_entries()?;
+    Ok(entries.into_iter().map(|s| (self.json_deserializer)(&s)).collect::<Vec<T>>())
+    // Ok(Vec::new())
+  }
+
+  pub fn get_next_available_id(&self, entries: &Vec<String>) -> Result<u64, Box<dyn Error>> {
     let nbr_entries = entries.len();
     match nbr_entries {
       0 => Ok(1),
@@ -54,31 +85,22 @@ impl <T: TUniqueEntity, FS: Fn(&T) -> String, FD: Fn(&str) -> T> FileDAO<T, FS, 
 impl<T: TUniqueEntity> TDAO<T> for FileDAO<T, fn(&T) -> String, fn(&str) -> T> {
 
   fn create(&self, entity: &T) -> Result<String, Box<dyn Error>> {
-    let content = self.read_file()?;
-    let entries: Vec<&str> = content.lines().collect();
+    let mut entries = self.get_str_entries()?;
 
-    let new_id = self.get_next_available_id(entries)?.to_string();
+    let new_id = self.get_next_available_id(&entries)?.to_string();
     let mut new_entity = entity.clone();
     new_entity.get_unique_entity_mut().set_id(new_id.clone());
-    
-    let new_content = {
-      let serialized_entity = (self.json_serializer)(&new_entity);
 
-      match content.is_empty() {
-        true => format!("{}\n", serialized_entity),
-        false => format!("{}{}\n", content, serialized_entity)
-      }
-    }; 
+    entries.push((self.json_serializer)(&new_entity));
 
-    self.write_file(&new_content);
+    self.write_file_str(entries);
 
     Ok(new_id)
   }
 
 
   fn update(&self, entity: &T) -> Result<(), Box<dyn Error>> {
-      let content = self.read_file()?;
-      let updated_entries: Vec<String> = content.lines().map(|line| {
+      let updated_entries: Vec<String> = self.get_str_entries()?.iter().map(|line| {
 
         let current_entity: T = (self.json_deserializer)(line);
         
@@ -89,36 +111,32 @@ impl<T: TUniqueEntity> TDAO<T> for FileDAO<T, fn(&T) -> String, fn(&str) -> T> {
         }
       }).collect();
 
-      self.write_file(&updated_entries.join("\n"));
+      self.write_file_str(updated_entries);
 
       Ok(())
   }
 
   fn delete(&self, id: &str) -> Result<(), Box<dyn Error>> {
-    let content = self.read_file()?;
-    let updated_entries: Vec<&str> = content.lines().filter(|line| {      
-      let curr_entity = (self.json_deserializer)(line);
+    let updated_entries: Vec<String> = self.get_str_entries()?.into_iter().filter(|line| {
+      let entity: T = (self.json_deserializer)(line);
 
-      curr_entity.get_unique_entity().get_id() != id
+      entity.get_unique_entity().get_id() != id
     }).collect();
 
-    self.write_file(&updated_entries.join("\n"));
+    self.write_file_str(updated_entries);
 
     Ok(())
   }
 
   fn find_all(&self) -> Result<Vec<T>, Box<dyn Error>> {
-      Ok(self.read_file()?.lines().map(|line| (self.json_deserializer)(line)).collect())
+      Ok(self.get_entries()?)
   }
 
   fn find_by_id(&self, id: &str) -> Result<T, Box< dyn Error>> {
-    let file_content = self.read_file()?;
-    
-    match file_content.lines().find(|line| { 
-      let entity: T = (self.json_deserializer)(line);
+    match self.get_entries()?.into_iter().find(|entity| {      
       entity.get_unique_entity().get_id() == id
     }) {
-      Some(entity) => Ok((self.json_deserializer)(entity)),
+      Some(entity) => Ok(entity),
       None => Err("Entity not found".into())
     }
   }

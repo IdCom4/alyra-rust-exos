@@ -8,7 +8,8 @@ pub trait TContactDAO: TDAO<Contact> {
   /// Find a contact by its name
   fn find_by_name(&self, name: &str) -> Result<Contact, Box<dyn Error>>;
 
-  //// Find a contact by its phone number
-  // fn find_by_phone(&self, phone: &str) -> Result<Contact, Box<dyn Error>>;
+  #[allow(dead_code)]
+  /// Find a contact by its phone number
+  fn find_by_phone(&self, phone: &str) -> Result<Contact, Box<dyn Error>>;
 
 }

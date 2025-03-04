@@ -43,6 +43,7 @@ pub fn get_list_contacts_menu(refresh_contacts: Arc<RefreshContactsFn>) -> Menu<
   
   for (index, _) in contacts.iter().enumerate() {
     options.insert((index + 1).to_string(), {
+      println!("index: {}", index + 1);
       let contact = contacts.get(index).unwrap().clone();
       let refresh_contacts = refresh_contacts.clone();
 

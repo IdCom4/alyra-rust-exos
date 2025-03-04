@@ -45,29 +45,24 @@ impl TDAO<Contact> for FileContactDAO {
 // TContactDAO implementation
 impl TContactDAO for FileContactDAO {
 
-    fn find_by_name(&self, name: &str) -> Result<Contact, Box<dyn Error>> {
-      let file_content = self.file_dao.read_file()?;
-    
-      match file_content.lines().find(|line| { 
-        let contact: Contact = (self.file_dao.json_deserializer)(line);
+    fn find_by_name(&self, name: &str) -> Result<Contact, Box<dyn Error>> {    
+      match self.file_dao.get_entries()?.into_iter().find(|contact| { 
         contact.get_name().trim().to_lowercase() == name.trim().to_lowercase()
       }) {
-        Some(str_contact) => Ok((self.file_dao.json_deserializer)(str_contact)),
+        Some(contact) => Ok(contact),
         None => Err("Contact not found".into())
       }
     }
 
-    // fn find_by_phone(&self, phone: &str) -> Result<Contact, Box<dyn Error>> {
-    //   let file_content = self.file_dao.read_file()?;
-    
-    //   match file_content.lines().find(|line| { 
-    //     let contact: Contact = (self.file_dao.json_deserializer)(line);
-    //     contact.get_phone() == phone
-    //   }) {
-    //     Some(str_contact) => Ok((self.file_dao.json_deserializer)(str_contact)),
-    //     None => Err("Contact not found".into())
-    //   }
-    // }
+    #[allow(dead_code)]
+    fn find_by_phone(&self, phone: &str) -> Result<Contact, Box<dyn Error>> {
+      match self.file_dao.get_entries()?.into_iter().find(|contact| { 
+        contact.get_phone().trim().to_lowercase() == phone.trim().to_lowercase()
+      }) {
+        Some(contact) => Ok(contact),
+        None => Err("Contact not found".into())
+      }
+    }
 
 }
 
