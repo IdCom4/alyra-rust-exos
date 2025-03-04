@@ -28,9 +28,6 @@ pub fn get_list_contacts_menu(refresh_contacts: Arc<RefreshContactsFn>) -> Menu<
     })
   };
 
-
-  // let contacts = refresh_contacts();
-
   let generate_options = {
     let refresh_contacts = refresh_contacts.clone();
 
